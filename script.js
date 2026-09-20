@@ -269,20 +269,29 @@ function speakRoute() {
   setStatus('Озвучиваю маршрут... (нажми ⏹ для стоп)', 'success');
 }
 
-// ====== Слои доступности (Overpass API) с автозагрузкой ======
+// ====== Слои доступности (Overpass API) с квадратами ======
 
 let moveTimeout = null;
 
-// Отслеживаем загруженные области, чтобы не запрашивать дважды
-const loadedBoxes = [];
-const MAX_BOX_SIZE = 0.06; // ~6 км
+// Размер квадрата в градусах (~3 км)
+const TILE_SIZE = 0.03;
 
-function isBoxLoaded(south, west, north, east) {
-  const cx = (west + east) / 2;
-  const cy = (south + north) / 2;
-  return loadedBoxes.some(b => 
-    cx >= b.west && cx <= b.east && cy >= b.south && cy <= b.north
-  );
+// Загруженные квадраты
+const loadedTiles = new Set();
+
+function tileKey(lat, lon) {
+  const latIdx = Math.floor(lat / TILE_SIZE);
+  const lonIdx = Math.floor(lon / TILE_SIZE);
+  return `${latIdx}:${lonIdx}`;
+}
+
+function getTileBounds(latIdx, lonIdx) {
+  return {
+    south: latIdx * TILE_SIZE,
+    west: lonIdx * TILE_SIZE,
+    north: (latIdx + 1) * TILE_SIZE,
+    east: (lonIdx + 1) * TILE_SIZE
+  };
 }
 
 function toggleLayers() {
@@ -292,38 +301,34 @@ function toggleLayers() {
 
   if (!layersVisible && !panel.classList.contains('hidden')) {
     layersVisible = true;
-    loadAccessibilityLayers();
+    loadTilesAroundCenter();
   }
 }
 
-async function loadAccessibilityLayers() {
-  const b = map.getBounds();
-  const south = b.getSouth();
-  const west = b.getWest();
-  const north = b.getNorth();
-  const east = b.getEast();
+// Загружаем квадраты вокруг центра карты (3×3)
+async function loadTilesAroundCenter() {
+  const center = map.getCenter();
+  const latIdx = Math.floor(center.lat / TILE_SIZE);
+  const lonIdx = Math.floor(center.lng / TILE_SIZE);
 
-  // Если область уже загружена — не грузим
-  if (isBoxLoaded(south, west, north, east)) {
-    return;
+  const tiles = [];
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      tiles.push({ latIdx: latIdx + dy, lonIdx: lonIdx + dx });
+    }
   }
 
-  const height = north - south;
-  const width = east - west;
-
-  // Overpass не любит большие области — просим приблизить
-  if (height > MAX_BOX_SIZE || width > MAX_BOX_SIZE) {
-    setStatus('Приблизьте карту, чтобы загрузить данные доступности', 'error');
-    return;
-  }
-
-  await loadBox(south, west, north, east);
+  setStatus(`Загружаю ${tiles.length} квадратов...`);
+  await Promise.all(tiles.map(t => loadTile(t.latIdx, t.lonIdx)));
+  setStatus('Данные доступности загружены', 'success');
 }
 
-async function loadBox(south, west, north, east) {
-  if (isBoxLoaded(south, west, north, east)) return;
+async function loadTile(latIdx, lonIdx) {
+  const key = `${latIdx}:${lonIdx}`;
+  if (loadedTiles.has(key)) return;
 
-  const bbox = `${south},${west},${north},${east}`;
+  const bounds = getTileBounds(latIdx, lonIdx);
+  const bbox = `${bounds.south},${bounds.west},${bounds.north},${bounds.east}`;
 
   const query = `
     [out:json][timeout:25];
@@ -338,7 +343,6 @@ async function loadBox(south, west, north, east) {
     out body;
   `;
 
-  // Инициализируем группы один раз
   ['ramps', 'entrances', 'elevators', 'toilets', 'parking', 'noAccess'].forEach(k => {
     if (!layerGroups[k]) {
       layerGroups[k] = L.layerGroup();
@@ -390,17 +394,16 @@ async function loadBox(south, west, north, east) {
       layerGroups[group].addLayer(marker);
     });
 
-    // Запоминаем, что область загружена
-    loadedBoxes.push({ south, west, north, east });
+    loadedTiles.add(key);
 
-    // Применяем видимость по чекбоксам
     ['ramps', 'entrances', 'elevators', 'toilets', 'parking', 'noAccess'].forEach(k => {
       toggleLayer(k);
     });
 
-    setStatus(`Загружено объектов: ${data.elements.length}`, 'success');
   } catch (e) {
-    setStatus('Ошибка загрузки данных: ' + e.message, 'error');
+    // Тихо — если квадрат не загрузился, не спамим ошибками
+    console.warn('Tile ' + key + ' failed:', e.message);
+    loadedTiles.add(key); // помечаем как "попробовали", чтобы не долбить
   }
 }
 
@@ -432,6 +435,18 @@ map.on('moveend', () => {
   if (!layersVisible) return;
   clearTimeout(moveTimeout);
   moveTimeout = setTimeout(() => {
-    loadAccessibilityLayers();
-  }, 600);
+    // Загружаем квадрат под центром карты + соседние
+    const center = map.getCenter();
+    const latIdx = Math.floor(center.lat / TILE_SIZE);
+    const lonIdx = Math.floor(center.lng / TILE_SIZE);
+
+    const tiles = [];
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        tiles.push({ latIdx: latIdx + dy, lonIdx: lonIdx + dx });
+      }
+    }
+
+    tiles.forEach(t => loadTile(t.latIdx, t.lonIdx));
+  }, 500);
 });
