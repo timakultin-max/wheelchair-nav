@@ -300,12 +300,17 @@ async function loadAccessibilityLayers() {
     out body;
   `;
 
-  const url = 'https://overpass.private.coffee/api/interpreter';
+    const url = '/api/overpass';
   try {
     const res = await fetch(url, {
       method: 'POST',
-      body: 'data=' + encodeURIComponent(query)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: encodeURIComponent(query) })
     });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error('HTTP ' + res.status + ': ' + errText.slice(0, 100));
+    }
     const data = await res.json();
 
     // Инициализируем группы
