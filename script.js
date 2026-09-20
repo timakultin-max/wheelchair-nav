@@ -308,22 +308,12 @@ async function loadAccessibilityLayers() {
     return;
   }
 
-  // Если область слишком большая — режем на 4 части
   const height = north - south;
   const width = east - west;
 
+  // Overpass не любит большие области — просим приблизить
   if (height > MAX_BOX_SIZE || width > MAX_BOX_SIZE) {
-    const midLat = (south + north) / 2;
-    const midLon = (west + east) / 2;
-
-    setStatus('Загружаю данные доступности (4 части)...');
-
-    await Promise.all([
-      loadBox(south, west, midLat, midLon),
-      loadBox(south, midLon, midLat, east),
-      loadBox(midLat, west, north, midLon),
-      loadBox(midLat, midLon, north, east),
-    ]);
+    setStatus('Приблизьте карту, чтобы загрузить данные доступности', 'error');
     return;
   }
 
