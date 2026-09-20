@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Доступный маршрут — Москва</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="controls">
+    <div class="row">
+      <input id="from" type="text" placeholder="Откуда (адрес)" />
+      <button class="geo-btn" onclick="useMyLocation()" title="Моё местоположение">📍</button>
+    </div>
+    <input id="to" type="text" placeholder="Куда (адрес)" />
+    <div class="buttons">
+      <button id="buildBtn" onclick="buildRoute()">Построить маршрут</button>
+      <button id="voiceBtn" onclick="speakRoute()">🔊 Озвучить</button>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
