@@ -138,3 +138,10 @@ input[type="text"]:focus { border-color: #2b7de9; }
 @media (min-width: 600px) {
   #controls { max-width: 420px; }
 }
+/* Скрыть логотип Leaflet (украинский флаг), оставить только © OpenStreetMap */
+.leaflet-control-attribution a[href*="leaflet"] {
+  display: none !important;
+}
+.leaflet-control-attribution svg {
+  display: none !important;
+}
