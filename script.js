@@ -275,7 +275,7 @@ let moveTimeout = null;
 
 // Отслеживаем загруженные области, чтобы не запрашивать дважды
 const loadedBoxes = [];
-const MAX_BOX_SIZE = 0.04; // ~4 км
+const MAX_BOX_SIZE = 0.08; // ~8 км
 
 function isBoxLoaded(south, west, north, east) {
   const cx = (west + east) / 2;
