@@ -300,7 +300,7 @@ async function loadAccessibilityLayers() {
     out body;
   `;
 
-  const url = 'https://overpass-api.de/api/interpreter';
+  const url = 'https://overpass.private.coffee/api/interpreter';
   try {
     const res = await fetch(url, {
       method: 'POST',
