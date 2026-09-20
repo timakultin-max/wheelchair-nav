@@ -195,7 +195,9 @@ function stopVoice() {
   speechSynthesis.cancel();
   isSpeaking = false;
   currentUtterance = null;
-  document.getElementById('voiceBtn').textContent = '🔊';
+  const btn = document.getElementById('voiceBtn');
+  btn.textContent = '🔊';
+  btn.classList.remove('speaking');
   setStatus('Озвучка остановлена');
 }
 
@@ -211,8 +213,10 @@ function speakRoute() {
 
   speechSynthesis.cancel();
   isSpeaking = true;
-  document.getElementById('voiceBtn').textContent = '⏹';
-
+  const vbtn = document.getElementById('voiceBtn');
+  vbtn.textContent = '⏹';
+  vbtn.classList.add('speaking');
+  
   const texts = routeSteps.map(s => {
     let action = '';
     switch (s.type) {
@@ -236,9 +240,11 @@ function speakRoute() {
 
   function speakNext() {
     if (!isSpeaking || index >= texts.length) {
-      if (index >= texts.length) {
+  if (index >= texts.length) {
         isSpeaking = false;
-        document.getElementById('voiceBtn').textContent = '🔊';
+        const b = document.getElementById('voiceBtn');
+        b.textContent = '🔊';
+        b.classList.remove('speaking');
         setStatus('Озвучка завершена', 'success');
       }
       return;
