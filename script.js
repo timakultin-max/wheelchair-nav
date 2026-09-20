@@ -271,7 +271,6 @@ function speakRoute() {
 
 // ====== Слои доступности (Overpass API) с автозагрузкой ======
 
-let layersVisible = false;
 let moveTimeout = null;
 
 // Отслеживаем загруженные области, чтобы не запрашивать дважды
