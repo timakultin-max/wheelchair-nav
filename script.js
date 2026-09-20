@@ -269,23 +269,72 @@ function speakRoute() {
   setStatus('Озвучиваю маршрут... (нажми ⏹ для стоп)', 'success');
 }
 
-// ====== Слои доступности (Overpass API) ======
+// ====== Слои доступности (Overpass API) с автозагрузкой ======
+
+let layersVisible = false;
+let moveTimeout = null;
+
+// Отслеживаем загруженные области, чтобы не запрашивать дважды
+const loadedBoxes = [];
+const MAX_BOX_SIZE = 0.08; // ~8 км — безопасный размер для Overpass
+
+function isBoxLoaded(south, west, north, east) {
+  const cx = (west + east) / 2;
+  const cy = (south + north) / 2;
+  return loadedBoxes.some(b => 
+    cx >= b.west && cx <= b.east && cy >= b.south && cy <= b.north
+  );
+}
+
 function toggleLayers() {
   const panel = document.getElementById('layers');
   panel.classList.toggle('hidden');
+  document.getElementById('layersToggle').classList.toggle('open');
 
-  if (!layersVisible && panel.classList.contains('hidden') === false) {
-    loadAccessibilityLayers();
+  if (!layersVisible && !panel.classList.contains('hidden')) {
     layersVisible = true;
+    loadAccessibilityLayers();
   }
 }
 
 async function loadAccessibilityLayers() {
-  setStatus('Загружаю данные о доступности...');
-
-  // Ограничим область видимой частью карты
   const b = map.getBounds();
-  const bbox = `${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()}`;
+  const south = b.getSouth();
+  const west = b.getWest();
+  const north = b.getNorth();
+  const east = b.getEast();
+
+  // Если область уже загружена — не грузим
+  if (isBoxLoaded(south, west, north, east)) {
+    return;
+  }
+
+  // Если область слишком большая — режем на 4 части
+  const height = north - south;
+  const width = east - west;
+
+  if (height > MAX_BOX_SIZE || width > MAX_BOX_SIZE) {
+    const midLat = (south + north) / 2;
+    const midLon = (west + east) / 2;
+
+    setStatus('Загружаю данные доступности (4 части)...');
+
+    await Promise.all([
+      loadBox(south, west, midLat, midLon),
+      loadBox(south, midLon, midLat, east),
+      loadBox(midLat, west, north, midLon),
+      loadBox(midLat, midLon, north, east),
+    ]);
+    return;
+  }
+
+  await loadBox(south, west, north, east);
+}
+
+async function loadBox(south, west, north, east) {
+  if (isBoxLoaded(south, west, north, east)) return;
+
+  const bbox = `${south},${west},${north},${east}`;
 
   const query = `
     [out:json][timeout:25];
@@ -300,27 +349,25 @@ async function loadAccessibilityLayers() {
     out body;
   `;
 
-    const url = '/api/overpass';
+  // Инициализируем группы один раз
+  ['ramps', 'entrances', 'elevators', 'toilets', 'parking', 'noAccess'].forEach(k => {
+    if (!layerGroups[k]) {
+      layerGroups[k] = L.layerGroup();
+    }
+  });
+
   try {
-    const res = await fetch(url, {
+    const res = await fetch('/api/overpass', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: encodeURIComponent(query) })
     });
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error('HTTP ' + res.status + ': ' + errText.slice(0, 100));
-    }
-    const data = await res.json();
 
-    // Инициализируем группы
-    ['ramps', 'entrances', 'elevators', 'toilets', 'parking', 'noAccess'].forEach(k => {
-      if (!layerGroups[k]) {
-        layerGroups[k] = L.layerGroup().addTo(map);
-      } else {
-        layerGroups[k].clearLayers();
-      }
-    });
+    if (!res.ok) {
+      throw new Error('HTTP ' + res.status);
+    }
+
+    const data = await res.json();
 
     data.elements.forEach(el => {
       if (!el.lat || !el.lon) return;
@@ -354,7 +401,10 @@ async function loadAccessibilityLayers() {
       layerGroups[group].addLayer(marker);
     });
 
-    // Применяем текущие чекбоксы
+    // Запоминаем, что область загружена
+    loadedBoxes.push({ south, west, north, east });
+
+    // Применяем видимость по чекбоксам
     ['ramps', 'entrances', 'elevators', 'toilets', 'parking', 'noAccess'].forEach(k => {
       toggleLayer(k);
     });
@@ -387,3 +437,12 @@ function toggleLayer(name) {
     if (map.hasLayer(layerGroups[name])) map.removeLayer(layerGroups[name]);
   }
 }
+
+// ====== Автозагрузка при движении карты ======
+map.on('moveend', () => {
+  if (!layersVisible) return;
+  clearTimeout(moveTimeout);
+  moveTimeout = setTimeout(() => {
+    loadAccessibilityLayers();
+  }, 600);
+});
