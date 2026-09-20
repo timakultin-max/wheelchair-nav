@@ -11,14 +11,30 @@
 
   <div id="controls">
     <div class="row">
-      <input id="from" type="text" placeholder="Откуда (адрес)" />
+      <input id="from" type="text" placeholder="Откуда" autocomplete="off" />
       <button class="geo-btn" onclick="useMyLocation()" title="Моё местоположение">📍</button>
     </div>
-    <input id="to" type="text" placeholder="Куда (адрес)" />
+    <div id="fromSuggest" class="suggest"></div>
+
+    <input id="to" type="text" placeholder="Куда" autocomplete="off" />
+    <div id="toSuggest" class="suggest"></div>
+
     <div class="buttons">
       <button id="buildBtn" onclick="buildRoute()">Построить маршрут</button>
-      <button id="voiceBtn" onclick="speakRoute()">🔊 Озвучить</button>
+      <button id="voiceBtn" onclick="speakRoute()">🔊</button>
     </div>
+
+    <button id="layersToggle" onclick="toggleLayers()">♿ Слои доступности</button>
+
+    <div id="layers" class="layers hidden">
+      <label><input type="checkbox" id="layerRamps" checked onchange="toggleLayer('ramps')"> 🔵 Пандусы</label>
+      <label><input type="checkbox" id="layerEntrances" checked onchange="toggleLayer('entrances')"> 🟢 Доступные входы</label>
+      <label><input type="checkbox" id="layerElevators" checked onchange="toggleLayer('elevators')"> 🟣 Лифты</label>
+      <label><input type="checkbox" id="layerToilets" checked onchange="toggleLayer('toilets')"> 🟠 Доступные туалеты</label>
+      <label><input type="checkbox" id="layerParking" checked onchange="toggleLayer('parking')"> 🟡 Парковки для инвалидов</label>
+      <label><input type="checkbox" id="layerNoAccess" checked onchange="toggleLayer('noAccess')"> 🔴 Недоступно</label>
+    </div>
+
     <div id="status"></div>
   </div>
 
