@@ -180,6 +180,25 @@ async function buildRoute() {
 }
 
 // ====== Озвучка ======
+let isSpeaking = false;
+let currentUtterance = null;
+
+function toggleVoice() {
+  if (isSpeaking) {
+    stopVoice();
+  } else {
+    speakRoute();
+  }
+}
+
+function stopVoice() {
+  speechSynthesis.cancel();
+  isSpeaking = false;
+  currentUtterance = null;
+  document.getElementById('voiceBtn').textContent = '🔊';
+  setStatus('Озвучка остановлена');
+}
+
 function speakRoute() {
   if (!routeSteps.length) {
     setStatus('Сначала постройте маршрут', 'error');
@@ -191,6 +210,8 @@ function speakRoute() {
   }
 
   speechSynthesis.cancel();
+  isSpeaking = true;
+  document.getElementById('voiceBtn').textContent = '⏹';
 
   const texts = routeSteps.map(s => {
     let action = '';
@@ -210,14 +231,36 @@ function speakRoute() {
     return `${action}${street}. Через ${s.dist} метров.`;
   });
 
-  texts.forEach((t) => {
-    const u = new SpeechSynthesisUtterance(t);
+  // Произносим по очереди, с отслеживанием
+  let index = 0;
+
+  function speakNext() {
+    if (!isSpeaking || index >= texts.length) {
+      if (index >= texts.length) {
+        isSpeaking = false;
+        document.getElementById('voiceBtn').textContent = '🔊';
+        setStatus('Озвучка завершена', 'success');
+      }
+      return;
+    }
+
+    const u = new SpeechSynthesisUtterance(texts[index]);
     u.lang = 'ru-RU';
     u.rate = 0.95;
+    u.onend = () => {
+      index++;
+      speakNext();
+    };
+    u.onerror = () => {
+      isSpeaking = false;
+      document.getElementById('voiceBtn').textContent = '🔊';
+    };
+    currentUtterance = u;
     speechSynthesis.speak(u);
-  });
+  }
 
-  setStatus('Озвучиваю маршрут...', 'success');
+  speakNext();
+  setStatus('Озвучиваю маршрут... (нажми ⏹ для стоп)', 'success');
 }
 
 // ====== Слои доступности (Overpass API) ======
