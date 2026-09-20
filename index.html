@@ -3,36 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#2563eb">
   <title>Доступный маршрут — Москва</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
+  <div id="app-header">
+    <div class="logo">♿</div>
+    <div class="titles">
+      <h1>Доступный маршрут</h1>
+      <p>Навигатор для людей в колясках</p>
+    </div>
+  </div>
+
   <div id="controls">
-    <div class="row">
+    <div class="field">
+      <span class="field-icon">📍</span>
       <input id="from" type="text" placeholder="Откуда" autocomplete="off" />
-      <button class="geo-btn" onclick="useMyLocation()" title="Моё местоположение">📍</button>
+      <button class="geo-btn" onclick="useMyLocation()" title="Моё местоположение">🎯</button>
     </div>
     <div id="fromSuggest" class="suggest"></div>
 
-    <input id="to" type="text" placeholder="Куда" autocomplete="off" />
+    <div class="field">
+      <span class="field-icon">🏁</span>
+      <input id="to" type="text" placeholder="Куда" autocomplete="off" />
+    </div>
     <div id="toSuggest" class="suggest"></div>
 
     <div class="buttons">
-      <button id="buildBtn" onclick="buildRoute()">Построить маршрут</button>
-      <button id="voiceBtn" onclick="toggleVoice()">🔊</button>
+      <button id="buildBtn" onclick="buildRoute()">
+        <span>Построить маршрут</span>
+      </button>
+      <button id="voiceBtn" onclick="toggleVoice()" title="Озвучить маршрут">🔊</button>
     </div>
 
-    <button id="layersToggle" onclick="toggleLayers()">♿ Слои доступности</button>
+    <button id="layersToggle" onclick="toggleLayers()">
+      <span>♿ Слои доступности</span>
+      <span class="chevron">▾</span>
+    </button>
 
     <div id="layers" class="layers hidden">
-      <label><input type="checkbox" id="layerRamps" checked onchange="toggleLayer('ramps')"> 🔵 Пандусы</label>
-      <label><input type="checkbox" id="layerEntrances" checked onchange="toggleLayer('entrances')"> 🟢 Доступные входы</label>
-      <label><input type="checkbox" id="layerElevators" checked onchange="toggleLayer('elevators')"> 🟣 Лифты</label>
-      <label><input type="checkbox" id="layerToilets" checked onchange="toggleLayer('toilets')"> 🟠 Доступные туалеты</label>
-      <label><input type="checkbox" id="layerParking" checked onchange="toggleLayer('parking')"> 🟡 Парковки для инвалидов</label>
-      <label><input type="checkbox" id="layerNoAccess" checked onchange="toggleLayer('noAccess')"> 🔴 Недоступно</label>
+      <label class="chip"><input type="checkbox" id="layerRamps" checked onchange="toggleLayer('ramps')"> <span>🔵 Пандусы</span></label>
+      <label class="chip"><input type="checkbox" id="layerEntrances" checked onchange="toggleLayer('entrances')"> <span>🟢 Входы</span></label>
+      <label class="chip"><input type="checkbox" id="layerElevators" checked onchange="toggleLayer('elevators')"> <span>🟣 Лифты</span></label>
+      <label class="chip"><input type="checkbox" id="layerToilets" checked onchange="toggleLayer('toilets')"> <span>🟠 Туалеты</span></label>
+      <label class="chip"><input type="checkbox" id="layerParking" checked onchange="toggleLayer('parking')"> <span>🟡 Парковки</span></label>
+      <label class="chip"><input type="checkbox" id="layerNoAccess" checked onchange="toggleLayer('noAccess')"> <span>🔴 Недоступно</span></label>
     </div>
 
     <div id="status"></div>
