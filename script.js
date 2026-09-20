@@ -17,6 +17,30 @@ let layersVisible = false;
 
 const statusEl = document.getElementById('status');
 
+// ====== Сворачивание панели ======
+function toggleCollapse() {
+  const panel = document.getElementById('controls');
+  const btn = document.getElementById('collapseBtn');
+  const isCollapsed = panel.classList.toggle('collapsed');
+
+  btn.textContent = isCollapsed ? '☰' : '⤢';
+  btn.title = isCollapsed ? 'Развернуть' : 'Свернуть';
+
+  // Запоминаем состояние
+  localStorage.setItem('controlsCollapsed', isCollapsed ? '1' : '0');
+}
+
+// Восстанавливаем состояние при загрузке
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('controlsCollapsed');
+  if (saved === '1') {
+    const panel = document.getElementById('controls');
+    const btn = document.getElementById('collapseBtn');
+    panel.classList.add('collapsed');
+    btn.textContent = '☰';
+    btn.title = 'Развернуть';
+  }
+});
 function setStatus(text, type = '') {
   statusEl.textContent = text;
   statusEl.className = type;
