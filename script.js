@@ -162,7 +162,7 @@ async function buildRoute() {
 
   setStatus('Строю маршрут...');
 
-  const url = `https://router.project-osrm.org/route/v1/foot/${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson&steps=true`;
+  const url = `https://routing.openstreetmap.de/routed-foot/route/v1/foot/${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson&steps=true`;
   const res = await fetch(url);
   const data = await res.json();
 
